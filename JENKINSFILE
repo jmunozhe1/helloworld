@@ -2,13 +2,13 @@ pipeline {
     agent none
 
      stages {
-        stage('Get Code') {
-            agent any
-            steps {
-                // Obtener código del repo
-                git 'https://github.com/anieto-unir/helloworld.git'
-            }
-        }
+        // stage('Get Code') {
+        //     agent any
+        //     steps {
+        //         // Obtener código del repo
+        //         git 'https://github.com/anieto-unir/helloworld.git'
+        //     }
+        // }
 
     stage('Build') {
         agent any
