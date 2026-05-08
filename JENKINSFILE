@@ -3,7 +3,7 @@ pipeline {
 
      stages {
         stage('Get Code') {
-            agent {label 'nux'}
+            agent any
             steps {
                 // Obtener código del repo
                 git 'https://github.com/anieto-unir/helloworld.git'
@@ -11,7 +11,7 @@ pipeline {
         }
 
     stage('Build') {
-        agent {label 'win'}
+        agent any
         steps {
             echo 'Eyyyy, esto es Python. No hay que compilar nada!!!'
 	    echo WORKSPACE
@@ -23,7 +23,7 @@ pipeline {
     {
         parallel {
             stage('Unit') {
-                agent {label 'win'}
+                agent any
                 steps {
                     catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                         bat '''
@@ -35,7 +35,7 @@ pipeline {
             }
             
             stage('Rest') {
-                agent {label 'win'}
+                agent any
                 steps {
                     bat '''
                         set FLASK_APP=app\\api.py
@@ -51,7 +51,7 @@ pipeline {
     }
     
     stage ('Results') {
-        agent {label 'nux'}
+        agent any
         steps {
             junit 'result*.xml'
         }
