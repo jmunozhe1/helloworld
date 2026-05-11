@@ -2,16 +2,22 @@ pipeline {
     agent none
 
     stages {
-        stage('Setup') {
+        // stage('Setup') {
+        //     agent any
+        //     steps {
+        //         bat '''
+        //             python -m pip install --user pytest
+        //             set PATH=%USERPROFILE%\\AppData\\Roaming\\Python\\Python312\\Scripts;%PATH%
+        //         '''
+        //     }
+        // }
+        stage('Check PATH') {
             agent any
             steps {
-                bat '''
-                    python -m pip install --user pytest
-                    set PATH=%USERPROFILE%\\AppData\\Roaming\\Python\\Python312\\Scripts;%PATH%
-                '''
+                bat 'echo %PATH%'
+                bat 'where python'
             }
         }
-
         stage('Build') {
             agent any
             steps {
