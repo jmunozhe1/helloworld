@@ -3,17 +3,10 @@ pipeline {
 
     stages {
         stage('Build') {
-            steps {
-                echo 'Eyyy, esto es Python. No hay que compilar nada!!!'
-            echo WORKSPACE
-            bat 'dir'
-            }
-        }
-
-        stage('Build') {
             agent any
             steps {
                 echo 'Build stage...'
+                echo WORKSPACE
                 bat 'dir'
             }
         }
