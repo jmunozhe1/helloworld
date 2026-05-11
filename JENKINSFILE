@@ -2,22 +2,28 @@ pipeline {
     agent none
 
     stages {
-        // stage('Setup') {
-        //     agent any
-        //     steps {
-        //         bat '''
-        //             python -m pip install --user pytest
-        //             set PATH=%USERPROFILE%\\AppData\\Roaming\\Python\\Python312\\Scripts;%PATH%
-        //         '''
-        //     }
-        // }
-        stage('Verify') {
+        stage('Install Python') {
             agent any
             steps {
                 bat '''
-                    echo PATH limpio: %PATH%
-                    where python
-                    python --version
+                    REM Descargar Python portable (embedded)
+                    cd %WORKSPACE%
+                    curl -o python-embed.zip https://www.python.org/ftp/python/3.12.3/python-3.12.3-embed-amd64.zip
+                    tar -xf python-embed.zip -C python
+                    del python-embed.zip
+                    
+                    REM Descargar get-pip.py
+                    curl -o get-pip.py https://bootstrap.pypa.io/get-pip.py
+                    
+                    REM Instalar pip
+                    .\\python\\python.exe get-pip.py --no-warn-script-location
+                    del get-pip.py
+                    
+                    REM Instalar pytest y flask
+                    .\\python\\python.exe -m pip install pytest flask --no-warn-script-location
+                    
+                    REM Crear archivo de configuración para evitar conflictos de PATH
+                    echo .\\python\\python310._pth > python\\python310._pth
                 '''
             }
         }
