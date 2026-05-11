@@ -11,11 +11,14 @@ pipeline {
         //         '''
         //     }
         // }
-        stage('Check PATH') {
+        stage('Verify') {
             agent any
             steps {
-                bat 'echo %PATH%'
-                bat 'where python'
+                bat '''
+                    echo PATH limpio: %PATH%
+                    where python
+                    python --version
+                '''
             }
         }
         stage('Build') {
