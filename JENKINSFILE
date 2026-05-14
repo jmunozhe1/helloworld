@@ -30,12 +30,22 @@ pipeline {
                     agent any
                     steps {
                         bat '''
-                            set PATH=%USERPROFILE%\\AppData\\Roaming\\Python\\Python312\\Scripts;%PATH%
-                            set FLASK_APP=app\\api.py
-                            set FLASK_ENV=development
-                            set PYTHONPATH=%WORKSPACE%
-                            python -m pytest --junitxml=result-rest.xml test\\rest
-                        '''
+                        set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
+                        set PYTHONPATH=%WORKSPACE%
+                        set FLASK_APP=app\\api.py
+                        
+                        :: Iniciar Flask en segundo plano (usando start /B)
+                        start /B python -m flask run --port 5000
+                        
+                        :: Darle unos segundos a Flask para que arranque
+                        timeout /t 5 /nobreak
+                        
+                        :: Ejecutar los tests
+                        python -m pytest --junitxml=result-rest.xml test\\rest
+                        
+                        :: Nota: Al terminar el stage, Jenkins suele matar los procesos hijos, 
+                        :: así que el servidor se cerrará solo.
+                    '''
                     }    
                 }    
             }
