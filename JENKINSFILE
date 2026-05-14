@@ -34,17 +34,18 @@ pipeline {
                         set PYTHONPATH=%WORKSPACE%
                         set FLASK_APP=app\\api.py
                         
-                        :: Iniciar Flask en segundo plano (usando start /B)
+                        :: 1. Lanzar la API principal (Puerto 5000)
                         start /B python -m flask run --port 5000
                         
-                        :: Darle unos segundos a Flask para que arranque
-                        timeout /t 5 /nobreak
+                        :: 2. Lanzar el MOCK (Puerto 9090) 
+                        :: Ajusta el comando si el mock se lanza con otro script, por ejemplo:
+                        start /B python app\\mock_service.py 
                         
-                        :: Ejecutar los tests
+                        :: 3. Esperar 5 segundos (usando ping en lugar de timeout)
+                        ping -n 6 127.0.0.1 > nul
+                        
+                        :: 4. Ejecutar los tests
                         python -m pytest --junitxml=result-rest.xml test\\rest
-                        
-                        :: Nota: Al terminar el stage, Jenkins suele matar los procesos hijos, 
-                        :: así que el servidor se cerrará solo.
                     '''
                     }    
                 }    
