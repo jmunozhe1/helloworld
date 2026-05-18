@@ -61,7 +61,6 @@ pipeline {
                         set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
                         bandit -r app -f txt -o bandit.txt || exit 0
                     '''
-                    // Guardamos el txt directamente en Jenkins en lugar de usar el plugin roto
                     archiveArtifacts artifacts: 'bandit.txt', allowEmptyArchive: true
                 }
             }
@@ -75,8 +74,8 @@ pipeline {
                         set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
                         coverage xml -o coverage.xml
                     '''
-                    // onlyStable: false obliga al plugin a generar el reporte aunque Flake8 viniera inestable
-                    cobertura coberturaReportFile: 'coverage.xml', onlyStable: false
+                    // Simplificado: quitamos el parámetro onlyStable
+                    cobertura coberturaReportFile: 'coverage.xml'
                 }
             }
         }
@@ -93,8 +92,8 @@ pipeline {
                         ping -n 5 127.0.0.1 > nul
                         jmeter -n -t test\\performance\\test_plan.jmx -l jmeter_results.jtl || exit 0
                     '''
-                    // Solo procesará si el archivo jmeter_results.jtl logra crearse
-                    perfReport sourceDataFiles: 'jmeter_results.jtl', allowNoReports: true
+                    // Simplificado: quitamos el parámetro allowNoReports
+                    perfReport sourceDataFiles: 'jmeter_results.jtl'
                 }
             }
         }
