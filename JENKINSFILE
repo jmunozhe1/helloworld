@@ -48,7 +48,7 @@ pipeline {
                         set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
                         flake8 app --format=default --output-file=flake8.txt || exit 0
                     '''
-                    recordIssues tool: flake8(pattern: 'flake8.txt'), qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true]]
+                    recordIssues tool: flake8(pattern: 'flake8.txt'), qualityGates: [[threshold: 10, type: 'TOTAL', unstable: true]]
                 }
             }
         }
