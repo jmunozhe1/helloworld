@@ -13,6 +13,7 @@ pipeline {
 
         stage('Tests') {
             parallel {
+                // Ejercicio 1: Añadir etapa Unit lanzando solo las pruebas unitarias
                 stage('Unit') {
                     agent any
                     steps {
@@ -26,7 +27,7 @@ pipeline {
                     }
                 }
                 
-                stage('Rest') {
+                stage('Service') {
                     agent any
                     steps {
                         bat '''
@@ -36,7 +37,6 @@ pipeline {
                             set FLASK_APP=app\\api.py
                             
                             echo [1/4] Descargando WireMock standalone...
-                            :: Descarga el JAR oficial directamente al espacio de trabajo de Jenkins
                             powershell -Command "Invoke-WebRequest -Uri 'https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-jre8-standalone/2.28.0/wiremock-jre8-standalone-2.28.0.jar' -OutFile 'wiremock-standalone.jar'"
                             
                             echo [2/4] Levantando Flask en puerto 5000...
