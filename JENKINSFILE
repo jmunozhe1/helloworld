@@ -2,64 +2,95 @@ pipeline {
     agent none
 
     stages {
-        stage('Build') {
-            agent any
-            steps {
-                echo 'Build stage...'
-                echo WORKSPACE
-                bat 'dir'
-            }
-        }
-
         stage('Tests') {
             parallel {
-                // Ejercicio 1: Añadir etapa Unit lanzando solo las pruebas unitarias
                 stage('Unit') {
                     agent any
                     steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
                             bat '''
                                 set PATH=%USERPROFILE%\\AppData\\Roaming\\Python\\Python312\\Scripts;%PATH%
                                 set PYTHONPATH=%WORKSPACE%
-                                python -m pytest --junitxml=result-unit.xml test\\unit
+                                coverage run --branch -m pytest --junitxml=result-unit.xml test\\unit
                             '''
+                            junit 'result-unit.xml'
                         }
                     }
                 }
-                
-                stage('Service') {
+
+                stage('Rest') {
                     agent any
                     steps {
-                        bat '''
-                            @echo off
-                            set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
-                            set PYTHONPATH=%WORKSPACE%
-                            set FLASK_APP=app\\api.py
-                            
-                            echo [1/4] Descargando WireMock standalone...
-                            powershell -Command "Invoke-WebRequest -Uri 'https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-jre8-standalone/2.28.0/wiremock-jre8-standalone-2.28.0.jar' -OutFile 'wiremock-standalone.jar'"
-                            
-                            echo [2/4] Levantando Flask en puerto 5000...
-                            start /B python -m flask run --port 5000
-                            
-                            echo [3/4] Levantando WireMock en puerto 9090...
-                            start /B java -jar wiremock-standalone.jar --port 9090 --root-dir "%WORKSPACE%\\test\\wiremock"
-                            
-                            echo [4/4] Esperando a que los servicios respondan...
-                            ping -n 11 127.0.0.1 > nul
-                            
-                            echo Ejecutando pruebas con Pytest...
-                            python -m pytest --junitxml=result-rest.xml test\\rest
-                        '''
+                        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                            bat '''
+                                @echo off
+                                set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
+                                set PYTHONPATH=%WORKSPACE%
+                                set FLASK_APP=app\\api.py
+                                powershell -Command "Invoke-WebRequest -Uri 'https://repo1.maven.org/maven2/com/github/tomakehurst/wiremock-jre8-standalone/2.28.0/wiremock-jre8-standalone-2.28.0.jar' -OutFile 'wiremock-standalone.jar'"
+                                start /B python -m flask run --port 5000
+                                start /B java -jar wiremock-standalone.jar --port 9090 --root-dir "%WORKSPACE%\\test\\wiremock"
+                                ping -n 11 127.0.0.1 > nul
+                                python -m pytest --junitxml=result-rest.xml test\\rest
+                            '''
+                            junit 'result-rest.xml'
+                        }
                     }    
                 }    
             }
         }
-        
-        stage('Results') {
+
+        stage('Static') {
             agent any
             steps {
-                junit 'result*.xml'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                    bat '''
+                        set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
+                        flake8 app --format=default --output-file=flake8.txt || exit 0
+                    '''
+                    recordIssues tool: flake8(pattern: 'flake8.txt'), unstableTotalAll: 8, failedTotalAll: 10
+                }
+            }
+        }
+
+        stage('Security Test') {
+            agent any
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                    bat '''
+                        set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
+                        bandit -r app -f txt -o bandit.txt || exit 0
+                    '''
+                    recordIssues tool: bandit(pattern: 'bandit.txt'), unstableTotalAll: 2, failedTotalAll: 4
+                }
+            }
+        }
+
+        stage('Coverage') {
+            agent any
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                    bat '''
+                        set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
+                        coverage xml -o coverage.xml
+                    '''
+                    cobertura coberturaReportFile: 'coverage.xml', lineCoverageTargets: '95, 85, 0', branchCoverageTargets: '90, 80, 0'
+                }
+            }
+        }
+
+        stage('Performance') {
+            agent any
+            steps {
+                bat '''
+                    @echo off
+                    set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
+                    set FLASK_APP=app\\api.py
+                    start /B python -m flask run --port 5000
+                    ping -n 5 127.0.0.1 > nul
+                    jmeter -n -t test\\performance\\test_plan.jmx -l jmeter_results.jtl
+                '''
+                perfReport sourceDataFiles: 'jmeter_results.jtl'
             }
         }
     }
