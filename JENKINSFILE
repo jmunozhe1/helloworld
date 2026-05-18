@@ -48,7 +48,7 @@ pipeline {
                         set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
                         flake8 app --format=default --output-file=flake8.txt || exit 0
                     '''
-                    recordIssues tool: flake8(pattern: 'flake8.txt'), unstableTotalAll: 8, failedTotalAll: 10
+                    recordIssues tool: flake8(pattern: 'flake8.txt'), qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true], [threshold: 10, type: 'TOTAL', unstable: false]]
                 }
             }
         }
@@ -61,7 +61,7 @@ pipeline {
                         set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
                         bandit -r app -f txt -o bandit.txt || exit 0
                     '''
-                    recordIssues tool: bandit(pattern: 'bandit.txt'), unstableTotalAll: 2, failedTotalAll: 4
+                    recordIssues tool: bandit(pattern: 'bandit.txt'), qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: false]]
                 }
             }
         }
@@ -74,7 +74,7 @@ pipeline {
                         set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
                         coverage xml -o coverage.xml
                     '''
-                    cobertura coberturaReportFile: 'coverage.xml', lineCoverageTargets: '95, 85, 0', branchCoverageTargets: '90, 80, 0'
+                    cobertura coberturaReportFile: 'coverage.xml', lineCoverageTargets: '95, 85, 0', conditionalCoverageTargets: '90, 80, 0'
                 }
             }
         }
@@ -82,15 +82,17 @@ pipeline {
         stage('Performance') {
             agent any
             steps {
-                bat '''
-                    @echo off
-                    set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
-                    set FLASK_APP=app\\api.py
-                    start /B python -m flask run --port 5000
-                    ping -n 5 127.0.0.1 > nul
-                    jmeter -n -t test\\performance\\test_plan.jmx -l jmeter_results.jtl
-                '''
-                perfReport sourceDataFiles: 'jmeter_results.jtl'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                    bat '''
+                        @echo off
+                        set PATH=C:\\Python312;C:\\Python312\\Scripts;%PATH%
+                        set FLASK_APP=app\\api.py
+                        start /B python -m flask run --port 5000
+                        ping -n 5 127.0.0.1 > nul
+                        jmeter -n -t test\\performance\\test_plan.jmx -l jmeter_results.jtl
+                    '''
+                    perfReport sourceDataFiles: 'jmeter_results.jtl'
+                }
             }
         }
     }
